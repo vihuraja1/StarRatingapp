@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Rating with Emoji Feedback</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: auto;
+        }
+        #rating-area {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* Space between stars and emoji */
+        }
+        .rating {
+            display: inline-block;
+            direction: rtl; /* Stars visually ordered right-to-left */
+        }
+        .rating input {
+            display: none;
+        }
+        .rating label {
+            color: #ccc;
+            font-size: 40px;
+            padding: 0 2px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .rating label:hover,
+        .rating label:hover ~ label,
+        .rating input:checked ~ label,
+        .rating input:checked ~ label:hover,
+        .rating input:checked ~ label:hover ~ label {
+            color: #fdd835;
+        }
+        #feedback-display {
+            font-size: 24px;
+            /* Hidden until JS shows it */
+            display: none; 
+            align-items: center;
+            gap: 8px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+        }
+        #output-message {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #333;
+        }
+        #feedback-container {
+            display: none;
+            margin-top: 20px;
+        }
+        #feedback-text {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            margin-top: 10px;
+            height: 100px;
+        }
+        #submit-feedback {
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rate Our Service</h1>
+   
+    <div id="feedback-wrapper">
+        <div id="rating-area">
+            <div class="rating">
+                <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars">★</label>
+                <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars">★</label>
+                <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 stars">★</label>
+                <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 stars">★</label>
+                <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star">★</label>
+            </div>
+            <!-- Element to show the emoji and description next to the stars -->
+            <div id="feedback-display">
+                <span id="display-emoji"></span>
+                <span id="display-text"></span>
+            </div>
+        </div>
+
+        <p id="output-message">Please select a rating.</p>
+
+        <div id="feedback-container">
+            <label for="feedback-text">Please share your thoughts:</label>
+            <textarea id="feedback-text" placeholder="Type here..."></textarea>
+            <button id="submit-feedback" type="button">Submit Feedback</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Sound API Implementation ---
+        const starClickSound = new Audio('ding.mp3'); 
+        starClickSound.preload = 'auto';
+        // --------------------------------
+
+        const stars = document.querySelectorAll('.rating input');
+        const output = document.getElementById('output-message');
+        const feedbackContainer = document.getElementById('feedback-container');
+        const feedbackText = document.getElementById('feedback-text');
+        const submitButton = document.getElementById('submit-feedback');
+        const feedbackDisplay = document.getElementById('feedback-display');
+        const displayEmoji = document.getElementById('display-emoji');
+        const displayText = document.getElementById('display-text');
+
+        let currentRating = 0;
+
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                starClickSound.play();
+                currentRating = star.value;
+                feedbackContainer.style.display = 'block';
+                feedbackDisplay.style.display = 'flex'; /* Show the new emoji display area */
+
+                // Update text message and side emoji based on rating
+                switch (currentRating) {
+                    case '1':
+                        output.textContent = "Oh dear, we're sorry to hear that. Please elaborate below.";
+                        displayEmoji.textContent = '😞';
+                        displayText.textContent = 'Terrible';
+                        break;
+                    case '2':
+                        output.textContent = "We appreciate the feedback. Please tell us how we can do better.";
+                        displayEmoji.textContent = '😟';
+                        displayText.textContent = 'Bad';
+                        break;
+                    case '3':
+                        output.textContent = "Thanks for your rating! Feel free to leave comments below.";
+                        displayEmoji.textContent = '😐';
+                        displayText.textContent = 'Okay';
+                        break;
+                    case '4':
+                        output.textContent = "Wonderful! Thank you for the positive feedback. Share more below if you like.";
+                        displayEmoji.textContent = '😊';
+                        displayText.textContent = 'Good';
+                        break;
+                    case '5':
+                        output.textContent = "You're the best! We are thrilled. Share your experience below!";
+                        displayEmoji.textContent = '😀';
+                        displayText.textContent = 'Amazing';
+                        break;
+                    default:
+                        output.textContent = "Thank you for your rating! Add details below.";
+                        displayEmoji.textContent = '';
+                        displayText.textContent = '';
+                }
+            });
+        });
+
+        submitButton.addEventListener('click', () => {
+            const feedbackComment = feedbackText.value;
+            if (currentRating > 0) {
+                console.log('--- Submission Captured Locally ---');
+                console.log('Submitted Rating:', currentRating + ' stars');
+                console.log('Submitted Feedback:', feedbackComment);
+                console.log('------------------------------------------');
+                
+                alert(`Thank you for submitting your ${currentRating}-star rating! Check the browser console (F12) for the logged data.`);
+                
+                feedbackText.value = '';
+                feedbackContainer.style.display = 'none';
+                feedbackDisplay.style.display = 'none'; // Hide the side emoji display after submit
+                output.textContent = "Thank you! Your feedback has been recorded locally.";
+            } else {
+                alert("Please select a star rating first.");
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+ 
+
+
