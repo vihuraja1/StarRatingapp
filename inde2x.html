@@ -1,0 +1,229 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        @import url('fonts.googleapis.com');
+
+        body {
+            margin: 0; height: 100vh; overflow: hidden;
+            background: #eef2ff; font-family: 'Outfit', sans-serif;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* 1. THE GIANT WOBBLY EMOJI BEHIND (Positioned higher up) */
+        #emoji-bg {
+            position: absolute; font-size: 450px; z-index: 1; opacity: 0.3;
+            user-select: none; pointer-events: none;
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: giantWobble 8s infinite ease-in-out, float 6s infinite alternate ease-in-out;
+            top: 20%; 
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        @keyframes giantWobble {
+            0%, 100% { transform: translate(0,0) rotate(0deg); }
+            50% { transform: translate(40px, -40px) rotate(15deg); }
+        }
+
+        /* Define the new continuous float animation */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-20px); }
+        }
+
+        /* 2. THE GLASS REVIEW CARD */
+        .card {
+            position: relative; z-index: 10;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            padding: 40px; border-radius: 50px; border: 4px solid white;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.05);
+            text-align: center; width: 380px;
+            transition: 0.5s ease-in-out, transform 0.3s ease-out;
+            animation: cardFloat 4s infinite alternate ease-in-out;
+        }
+
+        /* Define the new card float animation */
+        @keyframes cardFloat {
+            0% { transform: translateY(0px) scale(1); }
+            100% { transform: translateY(-5px) scale(1.01); }
+        }
+
+        /* Add a subtle rotation on hover for the card */
+        .card:hover {
+            transform: rotate(-2deg);
+            animation-play-state: paused;
+        }
+
+        .stars-row { display: flex; flex-direction: row-reverse; justify-content: center; gap: 10px; }
+        input { display: none; }
+        /* UPDATED: Added transition for transform/rotation here */
+        label { 
+            font-size: 60px; 
+            cursor: pointer; 
+            color: #cbd5e1; 
+            transition: 0.3s ease-out; /* Smooth transition for color and transform */
+        }
+        
+        /* UPDATED: Add rotation and glow effect when hovered or checked */
+        label:hover, label:hover ~ label, input:checked ~ label { 
+            color: #facc15; 
+            transform: scale(1.1) rotate(15deg); /* Scale up AND rotate 15 degrees */
+            text-shadow: 0 0 10px rgba(250, 204, 21, 0.8), 
+                         0 0 20px rgba(250, 204, 21, 0.4);
+        }
+
+        /* 3. CONDITIONAL TEXT BOX (Childish & Lively) */
+        #issue-container {
+            max-height: 0; overflow: hidden; opacity: 0;
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-top: 0;
+        }
+
+        #issue-container.active {
+            max-height: 200px; opacity: 1; margin-top: 25px;
+        }
+
+        textarea {
+            width: 90%; height: 80px; border-radius: 20px;
+            border: 3px solid #6366f1; padding: 15px;
+            font-family: 'Outfit'; font-size: 1rem;
+            resize: none; outline: none; background: rgba(255,255,255,0.8);
+        }
+
+        .status-msg { margin-top: 20px; font-size: 1.5rem; color: #312e81; font-weight: 800; }
+
+        /* Style the Send Button */
+        #send-btn {
+            background-color: #6366f1; /* Indigo color */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 15px;
+            margin-top: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Outfit', sans-serif;
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+            transition: transform 0.2s;
+        }
+
+        #send-btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="emoji-bg">📋</div>
+
+    <div class="card">
+        
+        <div class="stars-row">
+            <input type="radio" name="r" id="s5" onclick="update(5)"><label for="s5">★</label>
+            <input type="radio" name="r" id="s4" onclick="update(4)"><label for="s4">★</label>
+            <input type="radio" name="r" id="s3" onclick="update(3)"><label for="s3">★</label>
+            <input type="radio" name="r" id="s2" onclick="update(2)"><label for="s2">★</label>
+            <input type="radio" name="r" id="s1" onclick="update(1)"><label for="s1">★</label>
+        </div>
+
+        <div class="status-msg" id="msg">Rate Product</div>
+
+        <!-- This only shows if rating < 5 -->
+        <div id="issue-container">
+            <p style="margin: 0 0 10px 0; color: #ef4444; font-weight: bold;">What went wrong?</p>
+            <textarea id="issue-text" placeholder="Tell us about the issues..."></textarea>
+            <button onclick="sendFeedback()" id="send-btn">SEND</button>
+        </div>
+
+        <button onclick="location.reload()" style="margin-top:25px; background:none; border:none; color:#94a3b8; cursor:pointer; font-weight:bold;">[ RESTART ]</button>
+    </div>
+
+    <script>
+        const emojiBg = document.getElementById('emoji-bg');
+        const msg = document.getElementById('msg');
+        const issueBox = document.getElementById('issue-container');
+        
+        const config = {
+            1: { e: "😔", t: "Terrible" },
+            2: { e: "🙁", t: "BAD" },
+            3: { e: "😐", t: "Okay-okay" },
+            4: { e: "😃", t: "Happy" },
+            5: { e: "🤩", t: "WOW!" }
+        };
+
+        function update(val) {
+            const data = config[val];
+            
+            // 1. Change Background Emoji
+            emojiBg.innerText = data.e;
+            msg.innerText = data.t;
+
+            // 2. Conditional Logic: Show text box if NOT 5 stars
+            if (val < 5) {
+                issueBox.classList.add('active');
+            } else {
+                issueBox.classList.remove('active');
+            }
+
+            // 3. Lively Jump (Temporarily pause/override continuous animation for a moment)
+            emojiBg.style.animationPlayState = 'paused'; // Pause the continuous float for the jump
+            emojiBg.style.transform = "translateX(-50%) scale(1.3) rotate(15deg)"; 
+            setTimeout(() => { 
+                emojiBg.style.transform = "translateX(-50%) scale(1) rotate(0deg)"; 
+                setTimeout(() => {
+                    emojiBg.style.animationPlayState = 'running'; // Resume continuous animation
+                }, 400); // Wait for the jump transition to finish
+            }, 400);
+        }
+
+        // Mouse follow parallax
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX - window.innerWidth/2) / 20;
+            const y = (e.clientY - window.innerHeight/2) / 20;
+            
+            emojiBg.style.top = `calc(20% + ${y}px)`;
+            emojiBg.style.left = `calc(50% + ${x}px)`;
+        });
+
+        // Function to handle sending feedback
+        function sendFeedback() {
+            const feedbackText = document.getElementById('issue-text').value;
+            if (feedbackText.trim() === "") {
+                alert("Please write something before sending.");
+                return;
+            }
+            alert("Feedback Sent! Thank you for your input.");
+            issueBox.classList.remove('active');
+            document.getElementById('issue-text').value = ""; 
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
