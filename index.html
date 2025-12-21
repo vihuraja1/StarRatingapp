@@ -1,8 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Star Rating Card with Sound (Fixes Attempted)</title>
     <style>
+        /* (CSS is the same as before, omitted for brevity) */
         @import url('fonts.googleapis.com');
 
         body {
@@ -11,7 +14,6 @@
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* 1. THE GIANT WOBBLY EMOJI BEHIND (Positioned higher up) */
         #emoji-bg {
             position: absolute; font-size: 450px; z-index: 1; opacity: 0.3;
             user-select: none; pointer-events: none;
@@ -27,13 +29,11 @@
             50% { transform: translate(40px, -40px) rotate(15deg); }
         }
 
-        /* Define the new continuous float animation */
         @keyframes float {
             0% { transform: translateY(0px); }
             100% { transform: translateY(-20px); }
         }
 
-        /* 2. THE GLASS REVIEW CARD */
         .card {
             position: relative; z-index: 10;
             background: rgba(255, 255, 255, 0.5);
@@ -45,13 +45,11 @@
             animation: cardFloat 4s infinite alternate ease-in-out;
         }
 
-        /* Define the new card float animation */
         @keyframes cardFloat {
             0% { transform: translateY(0px) scale(1); }
             100% { transform: translateY(-5px) scale(1.01); }
         }
 
-        /* Add a subtle rotation on hover for the card */
         .card:hover {
             transform: rotate(-2deg);
             animation-play-state: paused;
@@ -59,23 +57,20 @@
 
         .stars-row { display: flex; flex-direction: row-reverse; justify-content: center; gap: 10px; }
         input { display: none; }
-        /* UPDATED: Added transition for transform/rotation here */
         label { 
             font-size: 60px; 
             cursor: pointer; 
             color: #cbd5e1; 
-            transition: 0.3s ease-out; /* Smooth transition for color and transform */
+            transition: 0.3s ease-out;
         }
         
-        /* UPDATED: Add rotation and glow effect when hovered or checked */
         label:hover, label:hover ~ label, input:checked ~ label { 
             color: #facc15; 
-            transform: scale(1.1) rotate(15deg); /* Scale up AND rotate 15 degrees */
+            transform: scale(1.1) rotate(15deg);
             text-shadow: 0 0 10px rgba(250, 204, 21, 0.8), 
                          0 0 20px rgba(250, 204, 21, 0.4);
         }
 
-        /* 3. CONDITIONAL TEXT BOX (Childish & Lively) */
         #issue-container {
             max-height: 0; overflow: hidden; opacity: 0;
             transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -95,9 +90,8 @@
 
         .status-msg { margin-top: 20px; font-size: 1.5rem; color: #312e81; font-weight: 800; }
 
-        /* Style the Send Button */
         #send-btn {
-            background-color: #6366f1; /* Indigo color */
+            background-color: #6366f1;
             color: white;
             padding: 10px 20px;
             border: none;
@@ -116,22 +110,24 @@
     </style>
 </head>
 <body>
+    <!-- ADDED: The audio element with an error handler -->
+    <audio id="starSound" src="starsound.mp3" preload="auto" onerror="console.error('Audio failed to load! Check your file path (starsound.mp3).');"></audio>
 
     <div id="emoji-bg">📋</div>
 
     <div class="card">
         
         <div class="stars-row">
-            <input type="radio" name="r" id="s5" onclick="update(5)"><label for="s5">★</label>
-            <input type="radio" name="r" id="s4" onclick="update(4)"><label for="s4">★</label>
-            <input type="radio" name="r" id="s3" onclick="update(3)"><label for="s3">★</label>
-            <input type="radio" name="r" id="s2" onclick="update(2)"><label for="s2">★</label>
-            <input type="radio" name="r" id="s1" onclick="update(1)"><label for="s1">★</label>
+            <!-- Modified onclick handlers to also play sound -->
+            <input type="radio" name="r" id="s5" onclick="update(5); playSound()"><label for="s5">★</label>
+            <input type="radio" name="r" id="s4" onclick="update(4); playSound()"><label for="s4">★</label>
+            <input type="radio" name="r" id="s3" onclick="update(3); playSound()"><label for="s3">★</label>
+            <input type="radio" name="r" id="s2" onclick="update(2); playSound()"><label for="s2">★</label>
+            <input type="radio" name="r" id="s1" onclick="update(1); playSound()"><label for="s1">★</label>
         </div>
 
         <div class="status-msg" id="msg">Rate The Presentaiton</div>
 
-        <!-- This only shows if rating < 5 -->
         <div id="issue-container">
             <p style="margin: 0 0 10px 0; color: #ef4444; font-weight: bold;">What went wrong?</p>
             <textarea id="issue-text" placeholder="Tell us about the issues..."></textarea>
@@ -145,6 +141,7 @@
         const emojiBg = document.getElementById('emoji-bg');
         const msg = document.getElementById('msg');
         const issueBox = document.getElementById('issue-container');
+        const starSound = document.getElementById('starSound');
         
         const config = {
             1: { e: "😔", t: "Terrible" },
@@ -154,32 +151,44 @@
             5: { e: "🤩", t: "WOW!" }
         };
 
+        function playSound() {
+            // Check the ready state before attempting to play
+            if (starSound.readyState >= 2) { // READY_STATE_ENOUGH_DATA or CAN_PLAY
+                 // Stop and rewind the sound if it's already playing quickly
+                starSound.currentTime = 0; 
+                // Using a Promise catch to handle potential browser autoplay policy rejections gracefully
+                starSound.play().catch(error => {
+                    console.warn("Autoplay was prevented by the browser policy:", error);
+                    // Alert the user only if debugging
+                    // alert("Sound blocked by browser policy. Interact with the page once first!");
+                });
+            } else {
+                console.warn("Sound file not ready to play yet.");
+            }
+        }
+
         function update(val) {
             const data = config[val];
             
-            // 1. Change Background Emoji
             emojiBg.innerText = data.e;
             msg.innerText = data.t;
 
-            // 2. Conditional Logic: Show text box if NOT 5 stars
             if (val < 5) {
                 issueBox.classList.add('active');
             } else {
                 issueBox.classList.remove('active');
             }
 
-            // 3. Lively Jump (Temporarily pause/override continuous animation for a moment)
-            emojiBg.style.animationPlayState = 'paused'; // Pause the continuous float for the jump
+            emojiBg.style.animationPlayState = 'paused';
             emojiBg.style.transform = "translateX(-50%) scale(1.3) rotate(15deg)"; 
             setTimeout(() => { 
                 emojiBg.style.transform = "translateX(-50%) scale(1) rotate(0deg)"; 
                 setTimeout(() => {
-                    emojiBg.style.animationPlayState = 'running'; // Resume continuous animation
-                }, 400); // Wait for the jump transition to finish
+                    emojiBg.style.animationPlayState = 'running';
+                }, 400);
             }, 400);
         }
 
-        // Mouse follow parallax
         document.addEventListener('mousemove', (e) => {
             const x = (e.clientX - window.innerWidth/2) / 20;
             const y = (e.clientY - window.innerHeight/2) / 20;
@@ -188,7 +197,6 @@
             emojiBg.style.left = `calc(50% + ${x}px)`;
         });
 
-        // Function to handle sending feedback
         function sendFeedback() {
             const feedbackText = document.getElementById('issue-text').value;
             if (feedbackText.trim() === "") {
